@@ -1,4 +1,4 @@
-package logger;
+package logclient;
 
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,7 @@ public class GoogleLogClient implements LogClient {
     }
 
     @Override
-    public void start(String processId, long timestamp) { //1
+    public void start(String processId, long timestamp) {
         taskScheduler[processId.hashCode() % taskScheduler.length].execute(() -> {
             final Process process = new Process(processId, timestamp);
             processes.put(processId, process);
@@ -43,16 +43,17 @@ public class GoogleLogClient implements LogClient {
     }
 
     @Override
-    public void end(String processId) { //1
+    public void end(String processId) {
         taskScheduler[processId.hashCode() % taskScheduler.length].execute(() -> {
-            lock.lock();//1
+            lock.lock();
             try {
-                final long now = System.currentTimeMillis();//1
-                processes.get(processId).setEndTime(now);//1
-                if (!futures.isEmpty() && queue.firstEntry().getValue().getId().equals(processId)) {
-                    pollNow();
-                    final var result = futures.remove(0);
-                    result.complete(null);
+                long now = System.currentTimeMillis();
+                processes.get(processId).setEndTime(now);
+                Process process = queue.firstEntry().getValue();
+                if (!futures.isEmpty() && process.getId().equals(processId)) {
+                    pollNow(process);
+                    CompletableFuture<Void> removedResult = futures.remove(0);
+                    removedResult.complete(null);
                 }
             } finally {
                 lock.unlock();
@@ -65,8 +66,9 @@ public class GoogleLogClient implements LogClient {
         lock.lock();
         try {
             final var result = new CompletableFuture<Void>();
-            if (!queue.isEmpty() && queue.firstEntry().getValue().getEndTime() != -1) {
-                pollNow();
+            Process process = queue.firstEntry().getValue();
+            if (!queue.isEmpty() && process.getEndTime() != -1) {
+                pollNow(process);
             } else {
                 futures.add(result);
             }
@@ -81,12 +83,11 @@ public class GoogleLogClient implements LogClient {
         }
     }
 
-    private String pollNow() {
-        final Process process = queue.firstEntry().getValue();
-        final var logStatement = process.getId() + " started at " + process.getStartTime() + " and ended at " + process.getEndTime();
+    private void pollNow(Process process) {
+        final var logStatement = process.getId() + " started at " + process.getStartTime() +
+                " and ended at " + process.getEndTime();
         System.out.println(logStatement);
         processes.remove(process.getId());
         queue.pollFirstEntry();
-        return logStatement;
     }
 }

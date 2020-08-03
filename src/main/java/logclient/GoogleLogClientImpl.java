@@ -1,4 +1,4 @@
-package logger;
+package logclient;
 
 import java.util.List;
 import java.util.Map;
@@ -16,14 +16,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LogClientImpl implements LogClient {
+public class GoogleLogClientImpl implements LogClient {
     private final ConcurrentSkipListMap<Long, List<Process>> queue;
     private final Map<String, Process> map;
     private final Lock lock;
     private final BlockingQueue<CompletableFuture<String>> pendingPolls;
     private final ExecutorService[] executorService;
 
-    public LogClientImpl(int threads) {
+    public GoogleLogClientImpl(int threads) {
         queue = new ConcurrentSkipListMap<>();
         map = new ConcurrentHashMap<>();
         lock = new ReentrantLock();

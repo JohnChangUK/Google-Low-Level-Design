@@ -1,4 +1,4 @@
-package logger;
+package logclient;
 
 public class Process {
     private final String id;
