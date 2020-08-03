@@ -1,4 +1,4 @@
-## Google low level design logger
+# Google low level design logger
 
 - Logger is designed for concurrency and locking.
 
