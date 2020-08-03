@@ -2,18 +2,21 @@
 
 - A logger implementation designed for multithreaded environments, dealing with concurrency and locking mechanisms. 
 
-### System Design
+## System Design
 
 <p>
     <img src="logging_algorithm.jpg" width="1200" height="600" />
 </p>
 
-- A task scheduler is responsible for managing and executing threads which `start` and `end` the logging. In order to ensure the `start` method is called before the `end` method,
+- A task scheduler in `GoogleLogClientImpl.java` is responsible for managing and executing threads which `start` and `end` the logging. In order to ensure the `start` method is called before the `end` method,
 a `consistent hashing` algorithm is used which points to the same thread which is responsible for starting and ending the same `Process`. 
 - The same thread must be starting and stopping a process as each thread has it's own callstack which maintains order of methods called. In a multihreaded environment, many threads are active and the end method can be called before the start, resulting in memory leaks due to the process never ending (end called first, then start method called next)
 - Futures are used to perform asynchronous computations, specifically ending processes without blocking the main thread.
+- A lock on both the `poll` and `end` method is acquired as this is needed to ensure a single thread is updating the data structures to keep consistency in reads.
+- Only method that can run in parallel is the `start` method; the `start` method does not need a lock as adding to the `queue` or `map` is fine.
+- Similar to a `producer consumer` type model, however this is more complex as it requires updates to the `queue` and `map` when calling `poll()`
 
-### Data Structures
+## Data Structures
 
 - `ConcurrentHashMap`- uses a multitude of locks (16 by default); each lock controls one segment of the hash. When setting data for a specific segment, 
 the lock for that segment is acquired and is only getting locked while adding or updating the map. This allows concurrent threads to read the value without locking at all.
@@ -24,4 +27,4 @@ FIFO structure. The head of queue is the lement which has been in the queue the 
 `blockingQueue.take()` will pop the head element off the queue.
 - `CopyOnWriteArrayList` - Thread safe, is synchronized therefore only one thread can access at a time.
 
-#### Based off of Gourav Sen's Google Low Level Design: [Google LLD](https://github.com/coding-parrot/projects)
+### Based off of Gourav Sen's Google Low Level Design: [Google LLD](https://github.com/coding-parrot/projects)
