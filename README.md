@@ -1,4 +1,4 @@
-# Google low level design logger
+# Google logger - Low level system design
 
 - A logger implementation designed for multithreaded environments, dealing with concurrency and locking mechanisms. 
 
