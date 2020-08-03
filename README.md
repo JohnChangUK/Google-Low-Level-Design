@@ -12,3 +12,4 @@ FIFO structure. The head of queue is the lement which has been in the queue the 
 `blockingQueue.take()` will pop the head element off the queue.
 - `CopyOnWriteArrayList` - Thread safe, is synchronized therefore only one thread can access at a time.
 
+#### Based off of Gourav Sen's Google Low Level Design: [Google LLD](https://github.com/coding-parrot/projects)
