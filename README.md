@@ -14,6 +14,12 @@ a `consistent hashing` algorithm is used which points to the same thread which i
 - Futures are used to perform asynchronous computations, specifically ending processes without blocking the main thread.
 - A lock on both the `poll` and `end` method is acquired as this is needed to ensure a single thread is updating the data structures to keep consistency in reads.
 - Only method that can run in parallel is the `start` method; the `start` method does not need a lock as adding to the `queue` or `map` is fine.
+- Everytime `poll` method is called, a future is added to the List and when the `end` method targets that process, it will get removed from the list and sent back
+as a response to the user. 
+```
+CompletableFuture<Void> removedResult = futures.remove(0);
+                        removedResult.complete(null);
+```
 - Similar to a `producer consumer` type model, however this is more complex as it requires updates to the `queue` and `map` when calling `poll()`
 
 ## Data Structures
