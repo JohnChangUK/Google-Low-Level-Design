@@ -21,21 +21,21 @@ public class GoogleLogClientImpl implements LogClient {
     private final Map<String, Process> map;
     private final Lock lock;
     private final BlockingQueue<CompletableFuture<String>> pendingPolls;
-    private final ExecutorService[] executorService;
+    private final ExecutorService[] taskScheduler;
 
     public GoogleLogClientImpl(int threads) {
         queue = new ConcurrentSkipListMap<>();
         map = new ConcurrentHashMap<>();
         lock = new ReentrantLock();
         pendingPolls = new LinkedBlockingQueue<>();
-        executorService = new ExecutorService[threads];
-        for (int i = 0; i < executorService.length; i++) {
-            executorService[i] = Executors.newSingleThreadExecutor();
+        taskScheduler = new ExecutorService[threads];
+        for (int i = 0; i < taskScheduler.length; i++) {
+            taskScheduler[i] = Executors.newSingleThreadExecutor();
         }
     }
 
     public void start(final String taskId, long timestamp) {
-        executorService[taskId.hashCode() % executorService.length].execute(() -> {
+        taskScheduler[taskId.hashCode() % taskScheduler.length].execute(() -> {
             final Process task = new Process(taskId, timestamp);
             map.put(taskId, task);
             queue.putIfAbsent(timestamp, new CopyOnWriteArrayList<>());
@@ -44,7 +44,7 @@ public class GoogleLogClientImpl implements LogClient {
     }
 
     public void end(final String taskId) {
-        executorService[taskId.hashCode() % executorService.length].execute(() -> {
+        taskScheduler[taskId.hashCode() % taskScheduler.length].execute(() -> {
             map.get(taskId).setEndTime(System.currentTimeMillis());
             lock.lock();
             try {
