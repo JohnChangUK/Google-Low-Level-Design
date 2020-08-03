@@ -1,6 +1,6 @@
 # Google low level design logger
 
-- Logger is designed for concurrency and locking.
+- A logger implementation designed for multithreaded environments, dealing with concurrency and locking mechanisms. 
 
 ### System Design
 
