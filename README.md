@@ -11,6 +11,7 @@
 - A task scheduler is responsible for managing and executing threads which `start` and `end` the logging. In order to ensure the `start` method is called before the `end` method,
 a consistent hashing algorithm is used which points to the same thread which is responsible for starting and ending the same `Process`. 
 - The same thread must be starting and stopping a process as each thread has it's own callstack which maintains order of methods called. In a multihreaded environment, many threads are active and the end method can be called before the start, resulting in memory leaks due to the process never ending (end called first, then start method called next)
+- Futures are used to perform asynchronous computations, specifically ending processes without blocking the main thread.
 
 ### Data Structures
 
