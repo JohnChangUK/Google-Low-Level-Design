@@ -1,5 +1,6 @@
 package logclient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -14,29 +15,30 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class GoogleLogClient implements LogClient {
+public class GlogClient implements LogClient {
 
     private final Map<String, Process> processes;
     private final ConcurrentSkipListMap<Long, Process> queue;
     private final List<CompletableFuture<Void>> futures;
     private final Lock lock;
-    private final ExecutorService[] taskScheduler;
+    private final List<ExecutorService> taskScheduler;
 
-    public GoogleLogClient(int threads) {
+    public GlogClient() {
         this.processes = new ConcurrentHashMap<>();
         this.queue = new ConcurrentSkipListMap<>();
         this.futures = new CopyOnWriteArrayList<>();
         this.lock = new ReentrantLock();
-        this.taskScheduler = new ExecutorService[threads];
-        for (int i = 0; i < taskScheduler.length; i++) {
-            taskScheduler[i] = Executors.newSingleThreadExecutor();
+        this.taskScheduler = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            taskScheduler.add(i, Executors.newSingleThreadExecutor());
         }
     }
 
+
     @Override
     public void start(String processId, long timestamp) {
-        taskScheduler[processId.hashCode() % taskScheduler.length].execute(() -> {
-            final Process process = new Process(processId, timestamp);
+        taskScheduler.get(processId.hashCode() % taskScheduler.size()).execute(() -> {
+            Process process = new Process(processId, timestamp);
             processes.put(processId, process);
             queue.put(timestamp, process);
         });
@@ -44,7 +46,7 @@ public class GoogleLogClient implements LogClient {
 
     @Override
     public void end(String processId) {
-        taskScheduler[processId.hashCode() % taskScheduler.length].execute(() -> {
+        taskScheduler.get(processes.hashCode() % taskScheduler.size()).execute(() -> {
             lock.lock();
             try {
                 long now = System.currentTimeMillis();
@@ -52,8 +54,8 @@ public class GoogleLogClient implements LogClient {
                 Process process = queue.firstEntry().getValue();
                 if (!futures.isEmpty() && process.getId().equals(processId)) {
                     pollNow(process);
-                    CompletableFuture<Void> removedResult = futures.remove(0);
-                    removedResult.complete(null);
+                    CompletableFuture<Void> removed = futures.remove(0);
+                    removed.complete(null);
                 }
             } finally {
                 lock.unlock();
@@ -65,7 +67,7 @@ public class GoogleLogClient implements LogClient {
     public String poll() {
         lock.lock();
         try {
-            final var result = new CompletableFuture<Void>();
+            CompletableFuture<Void> result = new CompletableFuture<>();
             Process process = queue.firstEntry().getValue();
             if (!queue.isEmpty() && process.getEndTime() != -1) {
                 pollNow(process);
@@ -74,9 +76,10 @@ public class GoogleLogClient implements LogClient {
             }
             try {
                 result.get(3, TimeUnit.SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
                 throw new RuntimeException(e);
             }
+
             return null;
         } finally {
             lock.unlock();
@@ -84,7 +87,7 @@ public class GoogleLogClient implements LogClient {
     }
 
     private void pollNow(Process process) {
-        final var logStatement = process.getId() + " started at " +
+        var logStatement = process.getId() + " started at " +
                 process.getStartTime() + " and ended at " + process.getEndTime();
         System.out.println(logStatement);
         processes.remove(process.getId());

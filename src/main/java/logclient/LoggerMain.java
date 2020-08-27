@@ -7,7 +7,7 @@ public class LoggerMain {
      * {1} started at {12} and ended at {15}
      */
     public static void main(String[] args) {
-        final LogClient logger = new GoogleLogClient();
+        final LogClient logger = new GoogleLogClient(10);
         logger.start("1", 1);
         logger.poll();
         logger.start("3", 2);
