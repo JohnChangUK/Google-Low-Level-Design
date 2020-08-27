@@ -58,7 +58,13 @@ public class AsyncMapPopulator {
                 .thenApply(num -> num * 2)
                 .thenApply(x -> x + 1)
                 .thenApply(x -> x * 2)
-                .thenAccept(x -> System.out.println("Final Number should be 50: " + x));
+                .thenAccept(x -> System.out.println("c1 should be 50: " + x));
+
+        CompletableFuture<Integer> c2 = new CompletableFuture<>();
+        c2.thenApply(num -> num * 3)
+                .thenAccept(x -> System.out.println("c2 should be 99: " + x));
+
+        c2.complete(33);
 
         System.out.println(mapPopulatedAsynchronously);
         asyncMapPopulator.backgroundJobExecutor.shutdownNow();
