@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -47,22 +46,26 @@ public class AsyncMapPopulator {
         hashMap.put("Five", 5);
 
         int i = Runtime.getRuntime().availableProcessors();
-        ForkJoinPool forkJoinPool = new ForkJoinPool(19);
-
         Future<Map<String, Integer>> apply = asyncMapPopulator.apply(hashMap);
-        Map<String, Integer> mapPopudlatedAsync = null;
+        Map<String, Integer> mapPopulatedAsynchronously = null;
         try {
-            mapPopudlatedAsync = apply.get();
+            mapPopulatedAsynchronously = apply.get();
         } catch (InterruptedException e) {
-            System.out.println("Err Timeout in Future GET");
+            System.out.println("Error Timeout in CompletableFuture GET()");
         }
 
-        System.out.println(mapPopudlatedAsync);
+        CompletableFuture<Void> c1 = CompletableFuture.completedFuture(12)
+                .thenApply(num -> num * 2)
+                .thenApply(x -> x + 1)
+                .thenApply(x -> x * 2)
+                .thenAccept(x -> System.out.println("Final Number should be 50: " + x));
+
+        System.out.println(mapPopulatedAsynchronously);
         asyncMapPopulator.backgroundJobExecutor.shutdownNow();
         try {
             asyncMapPopulator.backgroundJobExecutor.awaitTermination(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            System.out.println("err in terminating executor");
+            System.out.println("Error in terminating executor");
         }
     }
 }
